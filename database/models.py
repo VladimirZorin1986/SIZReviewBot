@@ -1,8 +1,7 @@
 import datetime
-from decimal import Decimal
 from typing import List, Optional
-from sqlalchemy import ForeignKey, Identity
-from sqlalchemy.types import BigInteger, String, SmallInteger, Integer, Date, DateTime, Numeric, Boolean, Text
+from sqlalchemy import ForeignKey, Identity, text
+from sqlalchemy.types import BigInteger, String, SmallInteger, Integer, DateTime, Boolean, Text
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -101,7 +100,7 @@ class PickPointRating(Base):
     )
     rating_score: Mapped[int] = mapped_column(SmallInteger)
     score_comment: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('NOW()'))
 
 
 class SIZModelReview(Base):
@@ -117,4 +116,4 @@ class SIZModelReview(Base):
         ForeignKey(column='siz_user.id', ondelete='CASCADE')
     )
     review_text: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('NOW()'))
