@@ -1,7 +1,7 @@
 import asyncio
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
-from services.utils import add_message_to_track
+from services.utils import add_message_to_track, erase_last_messages
 
 KeyboardMarkup = InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove
 
@@ -11,6 +11,8 @@ async def message_response(
         text: str,
         reply_markup: KeyboardMarkup | None = None,
         state: FSMContext | None = None,
+        add_to_track: bool = False,
+        num_of_msgs_to_delete: int | None = None,
         delay: float | None = None,
         delete_after: bool | None = None,
         return_msg: bool | None = None
@@ -20,6 +22,10 @@ async def message_response(
         reply_markup=reply_markup
     )
     if state:
+        if num_of_msgs_to_delete:
+            await erase_last_messages(state, num_of_msgs_to_delete, message.bot, message.chat.id)
+        if add_to_track:
+            await add_message_to_track(message, state)
         await add_message_to_track(msg, state)
     if delay:
         await asyncio.sleep(delay)

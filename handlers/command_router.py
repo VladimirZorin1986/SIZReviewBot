@@ -50,7 +50,6 @@ async def process_auth_help(callback: CallbackQuery):
 
 
 @router.message(Command('cancel'), ~StateFilter(default_state))
-@router.message(F.text.endswith('Вернуться в главное меню'), ~StateFilter(default_state))
 async def process_cancel_with_context(message: Message, session: AsyncSession, state: FSMContext):
     await terminate_state_branch(message, state, add_last=False)
     await process_switch_base_keyboards(message, state, session)

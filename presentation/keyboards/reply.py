@@ -16,7 +16,10 @@ def initial_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, one_time_keyboard=True)
 
 
-def return_kb() -> ReplyKeyboardMarkup:
-    kb = [[KeyboardButton(text='Вернуться в главное меню')]]
+def return_kb(main_only: bool = True) -> ReplyKeyboardMarkup:
+    kb = []
+    if not main_only:
+        kb.append([KeyboardButton(text='↩ Назад')])
+    kb.append([KeyboardButton(text='🔙 Вернуться в главное меню')])
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 

@@ -9,12 +9,23 @@ from services.models import TrackCallback
 
 async def add_message_to_track(message: Message, state: FSMContext) -> None:
     data: dict[str, Any] = await state.get_data()
-    track_list: list | None = data.get('track_messages')
+    track_list: list[int] | None = data.get('track_messages')
     if track_list:
         track_list.append(message.message_id)
     else:
         track_list = [message.message_id]
     await state.update_data(track_messages=track_list)
+
+
+async def _get_msg_stack(state: FSMContext) -> list[Message]:
+    data = await state.get_data()
+    return data.get('track_messages')
+
+
+async def erase_last_messages(state: FSMContext, msg_cnt_to_delete: int, bot: Bot, chat_id: int) -> None:
+    msg_stack = await _get_msg_stack(state)
+    with suppress(TelegramBadRequest):
+        await bot.delete_messages(chat_id=chat_id, message_ids=msg_stack[-msg_cnt_to_delete:])
 
 
 async def set_track_callback(callback: CallbackQuery, message: Message, state: FSMContext) -> None:

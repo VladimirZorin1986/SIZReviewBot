@@ -6,6 +6,15 @@ from states.callbacks import (QuestionCallbackFactory, PickPointCallbackFactory,
 from services.models import SQuestion, SPickPoint, SType, SModel
 
 
+emoji_dict = {
+    '1': '1️⃣',
+    '2': '2️⃣',
+    '3': '3️⃣',
+    '4': '4️⃣',
+    '5': '5️⃣'
+}
+
+
 def help_chapters_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -46,7 +55,7 @@ def show_potential_score() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for score in '12345':
         builder.button(
-            text=score,
+            text=emoji_dict.get(score),
             callback_data=score
         )
     return builder.adjust(5).as_markup()
@@ -55,9 +64,9 @@ def show_potential_score() -> InlineKeyboardMarkup:
 def show_yes_or_no() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text='Да', callback_data='yes'),
-             InlineKeyboardButton(text='Нет', callback_data='no'),
-             InlineKeyboardButton(text='Отмена', callback_data='cancel_comment')]
+            [InlineKeyboardButton(text='👍 Да', callback_data='yes'),
+             InlineKeyboardButton(text='👎 Нет', callback_data='no'),
+             InlineKeyboardButton(text='❌ Отмена', callback_data='cancel')]
         ]
     )
 

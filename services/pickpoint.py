@@ -20,6 +20,11 @@ class PickPointService:
         ]
 
     @classmethod
+    async def get_pickpoint_name(cls, session: AsyncSession, pickpoint_id: int) -> str:
+        pickpoint = await PickPointDAO.find_by_id(pickpoint_id, session)
+        return pickpoint.name
+
+    @classmethod
     async def remember_pickpoint(cls, state: FSMContext, pickpoint_id: int) -> None:
         await save_variable_in_state(state, pickpoint_id, 'pickpoint', convert_func=int)
 

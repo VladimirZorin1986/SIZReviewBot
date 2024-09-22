@@ -11,6 +11,7 @@ from handlers.user_router import router as user_router
 from handlers.faq_router import router as faq_router
 from handlers.pickpoint_router import router as pickpoint_router
 from handlers.siz_router import router as siz_router
+from handlers.other_router import router as other_router
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ async def main():
     dp.include_router(faq_router)
     dp.include_router(pickpoint_router)
     dp.include_router(siz_router)
+    dp.include_router(other_router)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
