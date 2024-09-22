@@ -14,3 +14,9 @@ def initial_kb() -> ReplyKeyboardMarkup:
          KeyboardButton(text='🔎 F.A.Q.')]
     ]
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, one_time_keyboard=True)
+
+
+def return_kb() -> ReplyKeyboardMarkup:
+    kb = [[KeyboardButton(text='Вернуться в главное меню')]]
+    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+

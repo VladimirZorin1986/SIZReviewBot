@@ -3,6 +3,7 @@ from aiogram.filters.callback_data import CallbackData
 
 class PickPointCallbackFactory(CallbackData, prefix='pickpoint'):
     pickpoint_id: int
+    name: str
 
 
 class QuestionCallbackFactory(CallbackData, prefix='question'):
@@ -11,7 +12,9 @@ class QuestionCallbackFactory(CallbackData, prefix='question'):
 
 class TypeCallbackFactory(CallbackData, prefix='type'):
     type_id: int
+    name: str
 
 
 class ModelCallbackFactory(CallbackData, prefix='model'):
-    model_id: int
+    sizmodel_id: int
+    name: str

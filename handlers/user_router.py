@@ -25,7 +25,8 @@ async def process_auth_with_contact(message: Message, state: FSMContext, session
     await message_response(
         message=message,
         text=text,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        delete_after=True
     )
     await state.clear()
 

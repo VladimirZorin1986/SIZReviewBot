@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable, Optional
 from contextlib import suppress
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
@@ -52,3 +52,21 @@ async def terminate_state_branch(message: Message, state: FSMContext, add_last: 
         await add_message_to_track(message, state)
     await _erase_track_messages(state, message.bot, message.chat.id)
     await state.clear()
+
+
+async def save_variable_in_state(
+        state: FSMContext, variable: Any, var_name: str, convert_func: Optional[Callable]) -> None:
+    data = await state.get_data()
+    variable = variable if not convert_func else convert_func(variable)
+    data[var_name] = variable
+    await state.update_data(**data)
+
+
+async def get_variable_from_state(state: FSMContext, var_name: str) -> Any:
+    data = await state.get_data()
+    return data.get(var_name)
+
+
+async def get_variables_from_state(state: FSMContext, var_names: list[str]) -> list[Any]:
+    data = await state.get_data()
+    return [data.get(var) for var in var_names]

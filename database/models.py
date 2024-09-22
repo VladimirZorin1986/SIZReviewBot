@@ -77,6 +77,7 @@ class SIZModel(Base):
         Integer,
         ForeignKey(column='siz_type.id', ondelete='RESTRICT')
     )
+    name: Mapped[str] = mapped_column(String(255))
     protect_props: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     care_procedure: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     writeoff_criteria: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

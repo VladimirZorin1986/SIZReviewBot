@@ -5,3 +5,4 @@ class PickPointState(StatesGroup):
     get_pickpoint = State()
     set_score = State()
     set_comment = State()
+    get_confirm = State()

@@ -11,3 +11,4 @@ class SIZReviewState(StatesGroup):
     get_type = State()
     get_model = State()
     set_review = State()
+    confirm_review = State()
