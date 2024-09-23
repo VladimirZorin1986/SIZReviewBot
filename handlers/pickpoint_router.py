@@ -47,7 +47,7 @@ async def process_choice_pickpoint(callback: CallbackQuery, state: FSMContext, s
     )
     await message_response(
         message=callback.message,
-        text='Для возврата к списку пунктов выдачи нажмите на кпопку "Назад"',
+        text='Для возврата к списку пунктов выдачи нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True
@@ -108,7 +108,7 @@ async def process_return_to_set_score(message: Message, state: FSMContext, sessi
     )
     await message_response(
         message=message,
-        text='Для возврата к выставлению оценки нажмите на кпопку "Назад"',
+        text='Для возврата к выставлению оценки нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True

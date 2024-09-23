@@ -3,7 +3,8 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
-from presentation.keyboards.reply import initial_kb
+from presentation.keyboards.reply import initial_kb, authorization_kb
+from services.utils import terminate_state_branch
 from states.auth import AuthState
 from presentation.responses import message_response
 from services.user import UserService
@@ -21,14 +22,13 @@ async def process_auth_with_contact(message: Message, state: FSMContext, session
         reply_markup = initial_kb()
     except UserNotExist:
         text = 'Вас нет в списке пользователей'
-        reply_markup = ReplyKeyboardRemove()
+        reply_markup = authorization_kb()
+    await terminate_state_branch(message, state)
     await message_response(
         message=message,
         text=text,
-        reply_markup=reply_markup,
-        delete_after=True
+        reply_markup=reply_markup
     )
-    await state.clear()
 
 
 @router.message(StateFilter(AuthState.get_contact), ~F.contact)

@@ -52,7 +52,7 @@ async def process_choice_type(callback: CallbackQuery, state: FSMContext, sessio
     )
     await message_response(
         message=callback.message,
-        text='Для возврата к списку типов СИЗ нажмите на кпопку "Назад"',
+        text='Для возврата к списку типов СИЗ нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True
@@ -115,7 +115,7 @@ async def process_choice_model(callback: CallbackQuery, state: FSMContext, sessi
         )
     await message_response(
         message=callback.message,
-        text='Для возврата к списку моделей СИЗ нажмите на кпопку "Назад"',
+        text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True
@@ -164,7 +164,7 @@ async def process_return_to_models_list(message: Message, state: FSMContext, ses
     )
     await message_response(
         message=message,
-        text='Для возврата к списку типов СИЗ нажмите на кпопку "Назад"',
+        text='Для возврата к списку типов СИЗ нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True
@@ -214,7 +214,7 @@ async def process_return_to_set_review(callback: CallbackQuery, state: FSMContex
     )
     await message_response(
         message=callback.message,
-        text='Для возврата к списку моделей СИЗ нажмите на кпопку "Назад"',
+        text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state
     )
