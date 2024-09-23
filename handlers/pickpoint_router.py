@@ -40,7 +40,7 @@ async def process_choice_pickpoint(callback: CallbackQuery, state: FSMContext, s
     _, pp_id, name = callback.data.split(':')
     await message_response(
         message=callback.message,
-        text=f'Вы выбрали пункт выдачи: {name}\nПоставьте оценку от 1 до 5:',
+        text=f'Вы выбрали пункт выдачи: <b>{name}</b>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
         reply_markup=show_potential_score(),
         state=state,
         num_of_msgs_to_delete=1
@@ -101,14 +101,14 @@ async def process_return_to_set_score(message: Message, state: FSMContext, sessi
     name = await PickPointService.get_pickpoint_name(session, pickpoint_id)
     await message_response(
         message=message,
-        text=f'Вы выбрали пункт выдачи: {name}\nПоставьте оценку от 1 до 5:',
+        text=f'Вы выбрали пункт выдачи: <strong>{name}</strong>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
         reply_markup=show_potential_score(),
         state=state,
         num_of_msgs_to_delete=4
     )
     await message_response(
         message=message,
-        text='Для возврата к списку пунктов выдачи нажмите на кпопку "Назад"',
+        text='Для возврата к выставлению оценки нажмите на кпопку "Назад"',
         reply_markup=return_kb(main_only=False),
         state=state,
         delete_after=True
@@ -137,14 +137,12 @@ async def process_save_rating(callback: CallbackQuery, state: FSMContext, sessio
         text='Ваша оценка пункта выдачи сохранена!',
         show_alert=True
     )
+    await terminate_state_branch(callback.message, state)
     await message_response(
         message=callback.message,
         text='Возврат в главное меню',
-        reply_markup=initial_kb(),
-        state=state,
-        delete_after=True
+        reply_markup=initial_kb()
     )
-    await terminate_state_branch(callback.message, state)
 
 
 @router.callback_query(StateFilter(PickPointState.get_confirm), F.data == 'no')
@@ -166,14 +164,12 @@ async def process_return_to_set_comment(callback: CallbackQuery, state: FSMConte
 
 @router.callback_query(StateFilter(PickPointState.get_confirm), F.data == 'cancel')
 async def process_cancel_branch(callback: CallbackQuery, state: FSMContext) -> None:
+    await terminate_state_branch(callback.message, state)
     await message_response(
         message=callback.message,
         text='Возврат в главное меню',
-        reply_markup=initial_kb(),
-        state=state,
-        delete_after=True
+        reply_markup=initial_kb()
     )
-    await terminate_state_branch(callback.message, state)
     await callback.answer()
 
 

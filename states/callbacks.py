@@ -17,4 +17,3 @@ class TypeCallbackFactory(CallbackData, prefix='type'):
 
 class ModelCallbackFactory(CallbackData, prefix='model'):
     sizmodel_id: int
-    name: str

@@ -31,6 +31,10 @@ class SIZService:
         )
 
     @classmethod
+    async def remember_type(cls, state: FSMContext, type_id: int) -> None:
+        await save_variable_in_state(state, type_id, 'type', convert_func=int)
+
+    @classmethod
     async def remember_model(cls, state: FSMContext, model_id: int) -> None:
         await save_variable_in_state(state, model_id, 'model', convert_func=int)
 

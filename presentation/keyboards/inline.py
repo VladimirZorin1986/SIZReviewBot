@@ -90,8 +90,7 @@ def show_siz_models(siz_models: List[SModel]) -> InlineKeyboardMarkup:
         builder.button(
             text=siz_model.name,
             callback_data=ModelCallbackFactory(
-                sizmodel_id=siz_model.id,
-                name=siz_model.name
+                sizmodel_id=siz_model.id
             ).pack()
         )
     return builder.adjust(1).as_markup()
