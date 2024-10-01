@@ -1,8 +1,9 @@
 from aiogram import Router, F
 from aiogram.fsm.state import default_state
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
+import emoji
 from sqlalchemy.ext.asyncio import AsyncSession
 from presentation.keyboards.inline import show_siz_types, show_siz_models, show_yes_or_no
 from presentation.keyboards.reply import return_kb, initial_kb
@@ -10,6 +11,7 @@ from services.utils import terminate_state_branch
 from states.siz import SIZInfoState, SIZReviewState
 from presentation.responses import message_response, callback_response
 from services.siz import SIZService
+from services.utils import add_message_to_track, erase_last_messages
 
 
 router = Router()
@@ -88,13 +90,16 @@ async def process_return_to_types_list(message: Message, state: FSMContext, sess
 async def process_choice_model(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     _, model_id = callback.data.split(':')
     model = await SIZService.get_model_info(session, int(model_id))
-    await message_response(
-        message=callback.message,
-        text=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>',
-        reply_markup=return_kb(main_only=False),
-        state=state,
-        num_of_msgs_to_delete=1
+    photo = model.file_id or FSInputFile(f'static/images/model_{model_id}.png')
+    msg = await callback.message.answer_photo(
+        photo=photo,
+        caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>',
+        reply_markup=return_kb(main_only=False)
     )
+    if not model.file_id:
+        await SIZService.upload_model_file_id(session, model.id, msg.photo[0].file_id)
+    await erase_last_messages(state, msg_cnt_to_delete=1, bot=callback.bot, chat_id=callback.message.chat.id)
+    await add_message_to_track(msg, state)
     if model.protect_props:
         await message_response(
             message=callback.message,
@@ -113,6 +118,12 @@ async def process_choice_model(callback: CallbackQuery, state: FSMContext, sessi
             text=f'<strong>Критерии преждевременного списания:</strong>\n<code>{model.writeoff_criteria}</code>',
             state=state
         )
+    if model.operating_rules:
+        await message_response(
+            message=callback.message,
+            text=f'<strong>Критерии преждевременного списания:</strong>\n<code>{model.operating_rules}</code>',
+            state=state
+        )
     await message_response(
         message=callback.message,
         text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
@@ -128,12 +139,16 @@ async def process_choice_model(callback: CallbackQuery, state: FSMContext, sessi
 async def process_set_model(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     _, model_id = callback.data.split(':')
     model = await SIZService.get_model_info(session, int(model_id))
-    await message_response(
-        message=callback.message,
-        text=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\nНапишите, пожалуйста, отзыв на выбранную модель.',
-        state=state,
-        num_of_msgs_to_delete=1
+    photo = model.file_id or FSInputFile(f'static/images/model_{model_id}.png')
+    msg = await callback.message.answer_photo(
+        photo=photo,
+        caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\nНапишите, пожалуйста, отзыв на выбранную модель.',
+        reply_markup=return_kb(main_only=False)
     )
+    if not model.file_id:
+        await SIZService.upload_model_file_id(session, model.id, msg.photo[0].file_id)
+    await erase_last_messages(state, msg_cnt_to_delete=1, bot=callback.bot, chat_id=callback.message.chat.id)
+    await add_message_to_track(msg, state)
     await message_response(
         message=callback.message,
         text='Для возврата к списку моделей СИЗ нажмите на кпопку "Назад"',
@@ -181,7 +196,7 @@ async def process_set_review(message: Message, state: FSMContext, session: Async
         state=state,
         add_to_track=True
     )
-    await SIZService.remember_review(state, message.text.strip())
+    await SIZService.remember_review(state, emoji.replace_emoji(message.text.strip(), replace=''))
     await state.set_state(SIZReviewState.confirm_review)
 
 

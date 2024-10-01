@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
+import emoji
 from presentation.keyboards.inline import show_pickpoints, show_potential_score, show_yes_or_no
 from presentation.keyboards.reply import return_kb, initial_kb
 from states.pickpoint import PickPointState
@@ -125,7 +126,7 @@ async def process_set_comment(message: Message, state: FSMContext, session: Asyn
         state=state,
         add_to_track=True
     )
-    await PickPointService.remember_comment(state, message.text.strip())
+    await PickPointService.remember_comment(state, emoji.replace_emoji(message.text.strip(), replace=''))
     await state.set_state(PickPointState.get_confirm)
 
 
