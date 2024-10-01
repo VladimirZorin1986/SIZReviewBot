@@ -72,7 +72,7 @@ async def process_switch_base_keyboards(
         reply_markup = authorization_kb()
     else:
         text = switch_start_cancel_view(message.text, True)
-        reply_markup = initial_kb()
+        reply_markup = initial_kb(await UserService.is_admin_user(session, message.from_user.id))
     await message_response(
         message=message,
         text=text,

@@ -27,8 +27,14 @@ class SIZService:
             name=raw_model.name,
             protect_props=raw_model.protect_props,
             care_procedure=raw_model.care_procedure,
-            writeoff_criteria=raw_model.writeoff_criteria
+            writeoff_criteria=raw_model.writeoff_criteria,
+            operating_rules=raw_model.operating_rules,
+            file_id=raw_model.file_id
         )
+
+    @classmethod
+    async def upload_model_file_id(cls, session: AsyncSession, model_id: int, file_id: str) -> None:
+        await SIZModelDAO.update_object(session, model_id, file_id=file_id)
 
     @classmethod
     async def remember_type(cls, state: FSMContext, type_id: int) -> None:

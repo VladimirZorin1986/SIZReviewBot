@@ -42,4 +42,6 @@ class SModel(BaseModel):
     protect_props: Optional[str] = None
     care_procedure: Optional[str] = None
     writeoff_criteria: Optional[str] = None
+    operating_rules: Optional[str] = None
+    file_id: Optional[str] = None
 
