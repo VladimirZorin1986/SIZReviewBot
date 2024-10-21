@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.fsm.state import default_state
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from presentation.responses import message_response, callback_response
 from services.user import UserService
 from exceptions.user import UserNotExist
 from states.notification import NotificationState
+from handlers.base_functions import return_to_main_menu, response_back
 
 router = Router()
 
@@ -23,10 +24,10 @@ async def process_auth_with_contact(message: Message, state: FSMContext, session
         await UserService.authorize_user(session, message.from_user.id, message.contact.phone_number)
         text = 'Вы успешно авторизованы'
         reply_markup = initial_kb()
+        await terminate_state_branch(message, state)
     except UserNotExist:
         text = 'Вас нет в списке пользователей'
         reply_markup = authorization_kb()
-    await terminate_state_branch(message, state)
     await message_response(
         message=message,
         text=text,
@@ -35,28 +36,29 @@ async def process_auth_with_contact(message: Message, state: FSMContext, session
 
 
 @router.message(StateFilter(AuthState.get_contact), ~F.contact)
-async def process_auth_no_contact(message: Message):
+async def process_auth_no_contact(message: Message, state: FSMContext):
     await message_response(
         message=message,
         text='Необходимо дать доступ к контактным данным. '
-             'Иначе авторизация невозможна.'
+             'Иначе авторизация невозможна.',
+        state=state
     )
 
 
 @router.message(StateFilter(default_state), F.text.endswith('Массовая рассылка'))
-async def process_start_notification(message: Message, state: FSMContext, session: AsyncSession):
-    await message_response(
+async def process_start_notification(message: Message, state: FSMContext):
+    await response_back(
         message=message,
-        text='Введите текст уведомления:',
-        reply_markup=return_kb(main_only=True),
         state=state,
-        delete_after=True
+        msg_text='Введите текст уведомления:',
+        delete_after=True,
+        main_only=True
     )
     await state.set_state(NotificationState.set_text)
 
 
-@router.message(StateFilter(NotificationState.set_text), F.text)
-async def process_set_notification_text(message: Message, state: FSMContext, session: AsyncSession):
+@router.message(StateFilter(NotificationState.set_text), F.text, ~F.text.endswith('Вернуться в главное меню'))
+async def process_set_notification_text(message: Message, state: FSMContext):
     await state.update_data(notification_text=message.text.strip())
     await message_response(
         message=message,
@@ -80,4 +82,16 @@ async def process_send_notification(callback: CallbackQuery, state: FSMContext, 
         text='Сообщение отправлено',
         show_alert=True
     )
+    await return_to_main_menu(callback.message, state, session, callback.from_user.id)
+
+
+@router.callback_query(StateFilter(NotificationState.get_confirm), F.data == 'no')
+@router.callback_query(StateFilter(NotificationState.get_confirm), F.data == 'cancel')
+async def process_cancel_notification(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    await callback_response(
+        callback=callback,
+        text='Отправка отменена',
+        show_alert=True
+    )
+    await return_to_main_menu(callback.message, state, session, callback.from_user.id)
 

@@ -6,54 +6,56 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 import emoji
 from presentation.keyboards.inline import show_pickpoints, show_potential_score, show_yes_or_no
-from presentation.keyboards.reply import return_kb, initial_kb
+from presentation.keyboards.reply import return_kb
 from states.pickpoint import PickPointState
 from presentation.responses import message_response, callback_response
 from services.pickpoint import PickPointService
-from services.utils import terminate_state_branch
-
+from handlers.base_functions import return_to_main_menu, navigate_to_auth, response_back
 
 router = Router()
 
 
 @router.message(StateFilter(default_state), F.text.endswith('Оценить пункт выдачи'))
 async def process_show_pickpoints(message: Message, state: FSMContext, session: AsyncSession):
-    pickpoints = await PickPointService.list_all_pickpoints(session)
-    await message_response(
-        message=message,
-        text='Выберите пункт выдачи для оценки:',
-        reply_markup=show_pickpoints(pickpoints),
-        state=state
-    )
-    await message_response(
-        message=message,
-        text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
-        reply_markup=return_kb(main_only=True),
-        state=state,
-        delete_after=True
-    )
-    await PickPointService.remember_user(session, state, message.from_user.id)
-    await state.set_state(PickPointState.get_pickpoint)
+    if not await PickPointService.is_authorized_user(session, message.from_user.id):
+        await navigate_to_auth(message, state)
+    else:
+        pickpoints = await PickPointService.list_all_pickpoints(session)
+        await message_response(
+            message=message,
+            text='Выберите пункт выдачи для оценки:',
+            reply_markup=show_pickpoints(pickpoints),
+            state=state
+        )
+        await response_back(
+            message=message,
+            state=state,
+            msg_text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
+            delete_after=True,
+            main_only=True
+        )
+        await PickPointService.cache_user(session, state, message.from_user.id)
+        await state.set_state(PickPointState.get_pickpoint)
 
 
 @router.callback_query(StateFilter(PickPointState.get_pickpoint), F.data.startswith('pickpoint'))
-async def process_choice_pickpoint(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    _, pp_id, name = callback.data.split(':')
+async def process_choice_pickpoint(callback: CallbackQuery, state: FSMContext):
+    _, pp_id, pp_name = callback.data.split(':')
     await message_response(
         message=callback.message,
-        text=f'Вы выбрали пункт выдачи: <b>{name}</b>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
+        text=f'Вы выбрали пункт выдачи: <b>{pp_name}</b>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
         reply_markup=show_potential_score(),
         state=state,
         num_of_msgs_to_delete=1
     )
-    await message_response(
+    await response_back(
         message=callback.message,
-        text='Для возврата к списку пунктов выдачи нажмите на кнопку "Назад"',
-        reply_markup=return_kb(main_only=False),
         state=state,
-        delete_after=True
+        msg_text='Для возврата к списку пунктов выдачи нажмите на кнопку "Назад"',
+        delete_after=True,
+        main_only=False
     )
-    await PickPointService.remember_pickpoint(state, int(pp_id))
+    await PickPointService.remember_variables_in_state(state, pickpoint_id=int(pp_id), pp_name=pp_name)
     await state.set_state(PickPointState.set_score)
     await callback.answer()
 
@@ -68,18 +70,18 @@ async def process_return_to_pickpoints(message: Message, state: FSMContext, sess
         state=state,
         num_of_msgs_to_delete=3
     )
-    await message_response(
+    await response_back(
         message=message,
-        text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
-        reply_markup=return_kb(main_only=True),
         state=state,
-        delete_after=True
+        msg_text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
+        delete_after=True,
+        main_only=True
     )
     await state.set_state(PickPointState.get_pickpoint)
 
 
 @router.callback_query(StateFilter(PickPointState.set_score), F.data.in_({'1', '2', '3', '4', '5'}))
-async def process_set_score(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def process_set_score(callback: CallbackQuery, state: FSMContext):
     await message_response(
         message=callback.message,
         text=f'Вы поставили оценку <strong>{callback.data}</strong>.\n'
@@ -90,35 +92,34 @@ async def process_set_score(callback: CallbackQuery, state: FSMContext, session:
         num_of_msgs_to_delete=1,
         delete_after=True
     )
-    await PickPointService.remember_score(state, int(callback.data))
+    await PickPointService.remember_variables_in_state(state, score=int(callback.data))
     await state.set_state(PickPointState.set_comment)
     await callback.answer()
 
 
 @router.message(StateFilter(PickPointState.set_comment), F.text.endswith('Назад'))
-async def process_return_to_set_score(message: Message, state: FSMContext, session: AsyncSession):
-    data = await state.get_data()
-    pickpoint_id = data.get('pickpoint')
-    name = await PickPointService.get_pickpoint_name(session, pickpoint_id)
+async def process_return_to_set_score(message: Message, state: FSMContext):
+    pp_name = await PickPointService.get_variable_from_state(state, 'pp_name')
     await message_response(
         message=message,
-        text=f'Вы выбрали пункт выдачи: <strong>{name}</strong>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
+        text=f'Вы выбрали пункт выдачи: <strong>{pp_name}</strong>\nПоставьте оценку от <b>1</b> до <b>5</b>:',
         reply_markup=show_potential_score(),
         state=state,
         num_of_msgs_to_delete=4
     )
-    await message_response(
+    await response_back(
         message=message,
-        text='Для возврата к выставлению оценки нажмите на кнопку "Назад"',
-        reply_markup=return_kb(main_only=False),
         state=state,
-        delete_after=True
+        msg_text='Для возврата к выставлению оценки нажмите на кнопку "Назад"',
+        delete_after=True,
+        main_only=False
     )
     await state.set_state(PickPointState.set_score)
 
 
-@router.message(StateFilter(PickPointState.set_comment), F.text)
-async def process_set_comment(message: Message, state: FSMContext, session: AsyncSession):
+@router.message(StateFilter(PickPointState.set_comment), F.text,
+                ~F.text.endswith('Назад'), ~F.text.endswith('Вернуться в главное меню'))
+async def process_set_comment(message: Message, state: FSMContext):
     await message_response(
         message=message,
         text='Сохранить отзыв?',
@@ -126,7 +127,9 @@ async def process_set_comment(message: Message, state: FSMContext, session: Asyn
         state=state,
         add_to_track=True
     )
-    await PickPointService.remember_comment(state, emoji.replace_emoji(message.text.strip(), replace=''))
+    await PickPointService.remember_variables_in_state(
+        state, comment=emoji.replace_emoji(message.text.strip(), replace='')
+    )
     await state.set_state(PickPointState.get_confirm)
 
 
@@ -138,18 +141,12 @@ async def process_save_rating(callback: CallbackQuery, state: FSMContext, sessio
         text='Ваша оценка пункта выдачи сохранена!',
         show_alert=True
     )
-    await terminate_state_branch(callback.message, state)
-    await message_response(
-        message=callback.message,
-        text='Возврат в главное меню',
-        reply_markup=initial_kb()
-    )
+    await return_to_main_menu(callback.message, state, session, callback.from_user.id)
 
 
 @router.callback_query(StateFilter(PickPointState.get_confirm), F.data == 'no')
-async def process_return_to_set_comment(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    data = await state.get_data()
-    score = data.get('score')
+async def process_return_to_set_comment(callback: CallbackQuery, state: FSMContext):
+    score = await PickPointService.get_variable_from_state(state, 'score')
     await message_response(
         message=callback.message,
         text=f'Вы поставили оценку <strong>{score}</strong>.\n'
@@ -164,23 +161,11 @@ async def process_return_to_set_comment(callback: CallbackQuery, state: FSMConte
 
 
 @router.callback_query(StateFilter(PickPointState.get_confirm), F.data == 'cancel')
-async def process_cancel_branch(callback: CallbackQuery, state: FSMContext) -> None:
-    await terminate_state_branch(callback.message, state)
-    await message_response(
-        message=callback.message,
-        text='Возврат в главное меню',
-        reply_markup=initial_kb()
-    )
+async def process_cancel_branch(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    await return_to_main_menu(callback.message, state, session, callback.from_user.id)
     await callback.answer()
 
 
 @router.message(F.text.endswith('Вернуться в главное меню'))
 async def process_return_to_main_menu(message: Message, state: FSMContext, session: AsyncSession):
-    await message_response(
-        message=message,
-        text='Возврат в главное меню',
-        reply_markup=initial_kb(),
-        delete_after=True
-    )
-    await terminate_state_branch(message, state)
-
+    await return_to_main_menu(message, state, session, message.from_user.id)

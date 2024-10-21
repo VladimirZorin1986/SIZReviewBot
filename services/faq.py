@@ -2,9 +2,10 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.models import SQuestion, SAnswer
 from dao.faq import FaqDAO
+from services.base import BaseService
 
 
-class FAQService:
+class FAQService(BaseService):
 
     @classmethod
     async def get_questions(cls, async_session: AsyncSession) -> List[SQuestion]:

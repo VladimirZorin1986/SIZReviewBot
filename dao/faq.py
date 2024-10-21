@@ -12,7 +12,7 @@ class FaqDAO(BaseDAO):
         query = (
             select(cls.model)
             .join(QuestionPriority, cls.model.priority_id == QuestionPriority.id)
-            .where(cls.model.is_active == True)
+            .where(cls.model.is_active)
             .order_by(QuestionPriority.order_value)
         )
         result = await async_session.execute(query)

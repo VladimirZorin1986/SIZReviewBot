@@ -5,19 +5,20 @@ from services.models import SModel, SType
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from services.utils import save_variable_in_state, get_variables_from_state
+from services.base import BaseService
 
 
-class SIZService:
-
-    @classmethod
-    async def list_all_types(cls, session: AsyncSession) -> List[SType]:
-        siz_types = await SIZTypeDAO.find_all(session, is_active=True)
-        return [SType(id=siz_type.id, name=siz_type.name) for siz_type in siz_types]
+class SIZService(BaseService):
 
     @classmethod
-    async def list_all_models_by_type(cls, session: AsyncSession, type_id: int) -> List[SModel]:
+    async def list_all_types(cls, session: AsyncSession) -> dict[int, str]:
+        siz_types = await SIZTypeDAO.get_filled_types(session)
+        return {siz_type.id: siz_type.name for siz_type in siz_types}
+
+    @classmethod
+    async def list_all_models_by_type(cls, session: AsyncSession, type_id: int) -> dict[int, str]:
         siz_models = await SIZModelDAO.find_all(session, type_id=type_id, is_active=True)
-        return [SModel(id=siz_model.id, name=siz_model.name) for siz_model in siz_models]
+        return {siz_model.id: siz_model.name for siz_model in siz_models}
 
     @classmethod
     async def get_model_info(cls, session: AsyncSession, model_id: int) -> SModel:
@@ -37,30 +38,20 @@ class SIZService:
         await SIZModelDAO.update_object(session, model_id, file_id=file_id)
 
     @classmethod
-    async def remember_type(cls, state: FSMContext, type_id: int) -> None:
-        await save_variable_in_state(state, type_id, 'type', convert_func=int)
-
-    @classmethod
-    async def remember_model(cls, state: FSMContext, model_id: int) -> None:
-        await save_variable_in_state(state, model_id, 'model', convert_func=int)
-
-    @classmethod
-    async def remember_user(cls, session: AsyncSession, state: FSMContext, tg_id: int) -> None:
-        user = await UserDAO.find_one_or_none(session, tg_id=tg_id, is_active=True)
-        await save_variable_in_state(state, user.id, 'user', convert_func=int)
-
-    @classmethod
-    async def remember_review(cls, state: FSMContext, review: str) -> None:
-        await save_variable_in_state(state, review, 'review', convert_func=str.strip)
-
-    @classmethod
     async def save_review(cls, session: AsyncSession, state: FSMContext) -> None:
-        model_id, user_id, review_text = await get_variables_from_state(state, ['model', 'user', 'review'])
+        model_id, user_id, review_text = await cls.get_variables_from_state(
+            state, ['model_id', 'user_id', 'review']
+        )
         await SIZReviewDAO.add_new_object(
             session,
             model_id=model_id,
             user_id=user_id,
             review_text=review_text
         )
+
+    @classmethod
+    async def get_item_name(cls, state: FSMContext, item_id: int, items_name: str) -> str:
+        items = await cls.get_variable_from_state(state, items_name)
+        return items.get(item_id)
 
 

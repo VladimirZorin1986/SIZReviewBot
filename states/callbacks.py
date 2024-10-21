@@ -11,8 +11,7 @@ class QuestionCallbackFactory(CallbackData, prefix='question'):
 
 
 class TypeCallbackFactory(CallbackData, prefix='type'):
-    type_id: int
-    name: str
+    siztype_id: int
 
 
 class ModelCallbackFactory(CallbackData, prefix='model'):

@@ -2,11 +2,12 @@ from datetime import datetime
 from dao.user import UserDAO
 from exceptions.user import UserNotExist
 from sqlalchemy.ext.asyncio import AsyncSession
+from services.base import BaseService
 
 
-class UserService:
+class UserService(BaseService):
 
-    admins = {1, 3}
+    admins = {1, 648987}
 
     @classmethod
     async def _get_user_by_phone(cls, phone_number: str, async_session: AsyncSession):
@@ -25,12 +26,6 @@ class UserService:
             tg_id=tg_id,
             last_modified_at=datetime.now()
         )
-
-    @classmethod
-    async def is_authorized_user(cls, async_session: AsyncSession, tg_id: int) -> bool:
-        if not await UserDAO.find_one_or_none(async_session, tg_id=tg_id, is_active=True):
-            return False
-        return True
 
     @classmethod
     async def is_admin_user(cls, async_session: AsyncSession, tg_id: int) -> bool:

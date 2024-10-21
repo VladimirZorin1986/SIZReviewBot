@@ -122,3 +122,13 @@ class SIZModelReview(Base):
     review_text: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('NOW()'))
     sent_to_eis: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class AdminNotice(Base):
+    __tablename__ = 'admin_notice'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    notice_text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime)
+    sent_from_eis: Mapped[datetime.datetime] = mapped_column(DateTime)
+    delivered_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)

@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from states.callbacks import (QuestionCallbackFactory, PickPointCallbackFactory,
                               TypeCallbackFactory, ModelCallbackFactory)
-from services.models import SQuestion, SPickPoint, SType, SModel
+from services.models import SQuestion, SPickPoint
 
 
 emoji_dict = {
@@ -71,27 +71,25 @@ def show_yes_or_no() -> InlineKeyboardMarkup:
     )
 
 
-def show_siz_types(siz_types: List[SType]) -> InlineKeyboardMarkup:
+def show_siz_types(siz_types: dict[int, str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for siz_type in siz_types:
+    for type_id, type_name in siz_types.items():
         builder.button(
-            text=siz_type.name,
+            text=type_name,
             callback_data=TypeCallbackFactory(
-                type_id=siz_type.id,
-                name=siz_type.name
+                siztype_id=type_id
             ).pack()
         )
     return builder.adjust(1).as_markup()
 
 
-def show_siz_models(siz_models: List[SModel]) -> InlineKeyboardMarkup:
+def show_siz_models(siz_models: dict[int, str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for siz_model in siz_models:
+    for model_id, model_name in siz_models.items():
         builder.button(
-            text=siz_model.name,
+            text=model_name,
             callback_data=ModelCallbackFactory(
-                sizmodel_id=siz_model.id
+                sizmodel_id=model_id
             ).pack()
         )
     return builder.adjust(1).as_markup()
-

@@ -6,31 +6,35 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from presentation.faq_views import answer_view
 from presentation.keyboards.inline import show_questions
-from presentation.keyboards.reply import return_kb
 from states.faq import QuestionState
 from presentation.responses import message_response, callback_response
 from services.faq import FAQService
+from handlers.base_functions import navigate_to_auth, response_back
 
 
 router = Router()
 
 
-@router.message(F.text.endswith('F.A.Q.'), StateFilter(default_state))
+@router.message(F.text.endswith('Ответы на вопросы'), StateFilter(default_state))
 async def process_show_questions(message: Message, state: FSMContext, session: AsyncSession):
-    questions = await FAQService.get_questions(session)
-    await state.set_state(QuestionState.get_question)
-    await message_response(
-        message=message,
-        text='Выберите интересующий вопрос из списка:',
-        reply_markup=show_questions(questions),
-        state=state
-    )
-    await message_response(
-        message=message,
-        text='Для возврата нажмите на кнопку "Вернуться в главное меню"',
-        reply_markup=return_kb(),
-        state=state
-    )
+    if not await FAQService.is_authorized_user(session, message.from_user.id):
+        await navigate_to_auth(message, state)
+    else:
+        questions = await FAQService.get_questions(session)
+        await state.set_state(QuestionState.get_question)
+        await message_response(
+            message=message,
+            text='Выберите интересующий вопрос из списка:',
+            reply_markup=show_questions(questions),
+            state=state
+        )
+        await response_back(
+            message=message,
+            state=state,
+            msg_text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
+            delete_after=True,
+            main_only=True
+        )
 
 
 @router.callback_query(StateFilter(QuestionState.get_question), F.data.startswith('question'))
