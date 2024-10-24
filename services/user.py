@@ -24,7 +24,8 @@ class UserService(BaseService):
             async_session,
             user.id,
             tg_id=tg_id,
-            last_modified_at=datetime.now()
+            last_modified_at=datetime.now(),
+            registered_at=datetime.now()
         )
 
     @classmethod

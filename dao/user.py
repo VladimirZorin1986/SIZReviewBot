@@ -9,6 +9,6 @@ class UserDAO(BaseDAO):
 
     @classmethod
     async def get_all_bot_users(cls, session: AsyncSession):
-        query = select(SIZUser).where(SIZUser.tg_id is not None).where(SIZUser.is_active)
+        query = select(SIZUser).where(SIZUser.tg_id != None).where(SIZUser.is_active)
         result = await session.execute(query)
         return result.scalars().all()

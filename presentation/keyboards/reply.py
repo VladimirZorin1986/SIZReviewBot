@@ -8,13 +8,18 @@ def authorization_kb() -> ReplyKeyboardMarkup:
 
 def initial_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
     kb = [
-        [KeyboardButton(text='🏬 Оценить пункт выдачи'),
-         KeyboardButton(text='🦺 Информация по СИЗ')],
-        [KeyboardButton(text='📖 Оставить отзыв на СИЗ'),
-         KeyboardButton(text='🔎 Ответы на вопросы')]
+        [KeyboardButton(text='🏬 Оценить работу пункта выдачи')],
+        [KeyboardButton(text='📖 Оставить отзыв о СИЗ')],
+        [KeyboardButton(text='🦺 Информация о СИЗ')],
+        [KeyboardButton(text='🔎 Ответы на вопросы')]
     ]
-    if is_admin:
-        kb.append([KeyboardButton(text='Массовая рассылка')])
+    # if is_admin:
+    #     kb.extend(
+    #         (
+    #             [KeyboardButton(text='Массовая рассылка')],
+    #             [KeyboardButton(text='Выполнить обработку уведомлений')]
+    #         )
+    #     )
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True, one_time_keyboard=True)
 
 

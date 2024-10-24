@@ -38,14 +38,13 @@ def show_questions(questions: List[SQuestion]) -> InlineKeyboardMarkup:
     return builder.adjust(1).as_markup()
 
 
-def show_pickpoints(pickpoints: List[SPickPoint]) -> InlineKeyboardMarkup:
+def show_pickpoints(pickpoints: dict[int, str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for pickpoint in pickpoints:
+    for pp_id, pp_name in pickpoints.items():
         builder.button(
-            text=pickpoint.name,
+            text=pp_name,
             callback_data=PickPointCallbackFactory(
-                pickpoint_id=pickpoint.id,
-                name=pickpoint.name
+                pickpoint_id=pp_id
             ).pack()
         )
     return builder.adjust(1).as_markup()

@@ -19,13 +19,13 @@ router = Router()
 
 
 @router.message(
-    StateFilter(default_state), F.text.endswith('Информация по СИЗ') | F.text.endswith('Оставить отзыв на СИЗ'))
+    StateFilter(default_state), F.text.endswith('Информация о СИЗ') | F.text.endswith('Оставить отзыв о СИЗ'))
 async def process_listing_types(message: Message, state: FSMContext, session: AsyncSession):
     if not await SIZService.is_authorized_user(session, message.from_user.id):
         await navigate_to_auth(message, state)
     else:
         siz_types = await SIZService.list_all_types(session)
-        new_state = SIZInfoState.get_type if message.text.endswith('Информация по СИЗ') else SIZReviewState.get_type
+        new_state = SIZInfoState.get_type if message.text.endswith('Информация о СИЗ') else SIZReviewState.get_type
         await message_response(
             message=message,
             text='Выберите интересующий тип СИЗ из списка:',
@@ -35,7 +35,7 @@ async def process_listing_types(message: Message, state: FSMContext, session: As
         await response_back(
             message=message,
             state=state,
-            msg_text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
+            msg_text='Для возврата в главное меню нажмите на кнопку <b>Вернуться в главное меню</b>',
             delete_after=True,
             main_only=True
         )
@@ -61,7 +61,7 @@ async def process_choice_type(callback: CallbackQuery, state: FSMContext, sessio
     await response_back(
         message=callback.message,
         state=state,
-        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку "Назад"',
+        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
         delete_after=True,
         main_only=False
     )
@@ -85,7 +85,7 @@ async def process_return_to_types_list(message: Message, state: FSMContext):
     await response_back(
         message=message,
         state=state,
-        msg_text='Для возврата в главное меню нажмите на кнопку "Вернуться в главное меню"',
+        msg_text='Для возврата в главное меню нажмите на кнопку <b>Вернуться в главное меню</b>',
         delete_after=True,
         main_only=True
     )
@@ -126,7 +126,7 @@ async def process_choice_model(callback: CallbackQuery, state: FSMContext, sessi
     await response_back(
         message=callback.message,
         state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
+        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
         delete_after=True,
         main_only=False
     )
@@ -144,7 +144,7 @@ async def process_set_model(callback: CallbackQuery, state: FSMContext, session:
     await response_back(
         message=callback.message,
         state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
+        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
         delete_after=True,
         main_only=False
     )
@@ -170,7 +170,7 @@ async def process_return_to_models_list(message: Message, state: FSMContext):
     await response_back(
         message=message,
         state=state,
-        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку "Назад"',
+        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
         delete_after=True,
         main_only=False
     )
@@ -214,7 +214,7 @@ async def process_return_to_set_review(callback: CallbackQuery, state: FSMContex
     await response_back(
         message=callback.message,
         state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку "Назад"',
+        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
         delete_after=False,
         main_only=False
     )
@@ -235,14 +235,23 @@ async def post_model_photo(
         caption: str,
         num_of_msgs_to_delete: int = 1
 ):
-    photo = model.file_id or FSInputFile(f'static/images/model_{model.id}.png')
-    msg = await callback.message.answer_photo(
-        photo=photo,
-        caption=caption,
-        reply_markup=return_kb(main_only=False)
-    )
-    if not model.file_id:
-        await SIZService.upload_model_file_id(session, model.id, msg.photo[0].file_id)
-    await erase_last_messages(
-        state, msg_cnt_to_delete=num_of_msgs_to_delete, bot=callback.bot, chat_id=callback.message.chat.id)
-    await add_message_to_track(msg, state)
+    try:
+        photo = model.file_id or FSInputFile(f'static/images/{model.file_name}')
+        msg = await callback.message.answer_photo(
+            photo=photo,
+            caption=caption,
+            reply_markup=return_kb(main_only=False)
+        )
+        if not model.file_id:
+            await SIZService.upload_model_file_id(session, model.id, msg.photo[0].file_id)
+        await erase_last_messages(
+            state, msg_cnt_to_delete=num_of_msgs_to_delete, bot=callback.bot, chat_id=callback.message.chat.id)
+        await add_message_to_track(msg, state)
+    except Exception:
+        await message_response(
+            message=callback.message,
+            text=caption,
+            reply_markup=return_kb(main_only=False),
+            state=state,
+            num_of_msgs_to_delete=num_of_msgs_to_delete
+        )

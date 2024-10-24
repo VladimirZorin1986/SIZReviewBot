@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 from dao.base import BaseDAO
 from database.models import SIZType, SIZModel, SIZModelReview
 

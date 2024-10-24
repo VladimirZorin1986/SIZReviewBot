@@ -40,6 +40,7 @@ class SIZUser(Base):
     phone_number: Mapped[str] = mapped_column(String(12), unique=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_modified_at: Mapped[datetime.datetime] = mapped_column(DateTime)
+    registered_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
 
     reviews: Mapped[List['SIZModelReview']] = relationship()
     ratings: Mapped[List['PickPointRating']] = relationship()
@@ -83,6 +84,7 @@ class SIZModel(Base):
     writeoff_criteria: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     operating_rules: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     file_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    file_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_modified_at: Mapped[datetime.datetime] = mapped_column(DateTime)
 

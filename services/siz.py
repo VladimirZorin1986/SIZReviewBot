@@ -1,10 +1,7 @@
 from aiogram.fsm.context import FSMContext
 from dao.siz import SIZTypeDAO, SIZModelDAO, SIZReviewDAO
-from dao.user import UserDAO
-from services.models import SModel, SType
+from services.models import SModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from services.utils import save_variable_in_state, get_variables_from_state
 from services.base import BaseService
 
 
@@ -30,7 +27,8 @@ class SIZService(BaseService):
             care_procedure=raw_model.care_procedure,
             writeoff_criteria=raw_model.writeoff_criteria,
             operating_rules=raw_model.operating_rules,
-            file_id=raw_model.file_id
+            file_id=raw_model.file_id,
+            file_name=raw_model.file_name
         )
 
     @classmethod
@@ -48,10 +46,3 @@ class SIZService(BaseService):
             user_id=user_id,
             review_text=review_text
         )
-
-    @classmethod
-    async def get_item_name(cls, state: FSMContext, item_id: int, items_name: str) -> str:
-        items = await cls.get_variable_from_state(state, items_name)
-        return items.get(item_id)
-
-

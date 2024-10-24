@@ -31,11 +31,6 @@ class SPickPoint(BaseModel):
     name: str
 
 
-class SType(BaseModel):
-    id: int
-    name: str
-
-
 class SModel(BaseModel):
     id: int
     name: str
@@ -44,4 +39,5 @@ class SModel(BaseModel):
     writeoff_criteria: Optional[str] = None
     operating_rules: Optional[str] = None
     file_id: Optional[str] = None
+    file_name: Optional[str] = None
 

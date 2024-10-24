@@ -31,6 +31,11 @@ class BaseService:
             return False
         return True
 
+    @classmethod
+    async def get_item_name(cls, state: FSMContext, item_id: int, items_name: str) -> str:
+        items = await cls.get_variable_from_state(state, items_name)
+        return items.get(item_id)
+
 
 
 

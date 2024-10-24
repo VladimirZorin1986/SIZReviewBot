@@ -9,7 +9,7 @@ async def insert_objects(async_session: async_sessionmaker[AsyncSession]) -> Non
 
 async def async_main() -> None:
     engine = create_async_engine(
-        "postgresql+asyncpg://postgres:postgres@localhost/siz_review_db",
+        "postgresql+asyncpg://postgres:postgres@localhost/siz_review_db_test",
         echo=True,
     )
 

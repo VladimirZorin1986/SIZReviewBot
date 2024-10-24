@@ -95,3 +95,10 @@ async def process_cancel_notification(callback: CallbackQuery, state: FSMContext
     )
     await return_to_main_menu(callback.message, state, session, callback.from_user.id)
 
+
+@router.message(StateFilter(default_state), F.text.endswith('Выполнить обработку уведомлений'))
+async def process_send_notifications(message: Message, state: FSMContext, session: AsyncSession):
+    await NotificationService.send_mass_admin_notification(message.bot, session)
+    await return_to_main_menu(message, state, session, message.from_user.id)
+
+
