@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.fsm.state import default_state
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery, FSInputFile, ReplyKeyboardRemove
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 import emoji
@@ -12,7 +12,10 @@ from presentation.responses import message_response, callback_response
 from services.siz import SIZService
 from services.models import SModel
 from services.utils import add_message_to_track, erase_last_messages
-from handlers.base_functions import return_to_main_menu, navigate_to_auth, response_back
+from handlers.base_functions import return_to_main_menu, navigate_to_auth, response_back, handle_exception
+from exceptions.user import UserNotExist
+from exceptions.cache import CacheError
+from exceptions.siz import NoTypesFound, NoModelsFound, InvalidModelError, ReviewSaveError
 
 
 router = Router()
@@ -24,13 +27,93 @@ async def process_listing_types(message: Message, state: FSMContext, session: As
     if not await SIZService.is_authorized_user(session, message.from_user.id):
         await navigate_to_auth(message, state)
     else:
-        siz_types = await SIZService.list_all_types(session)
-        new_state = SIZInfoState.get_type if message.text.endswith('Информация о СИЗ') else SIZReviewState.get_type
+        try:
+            siz_types = await SIZService.list_all_types(session)
+            await SIZService.cache_user(session, state, message.from_user.id)
+            new_state = SIZInfoState.get_type if message.text.endswith('Информация о СИЗ') else SIZReviewState.get_type
+            await message_response(
+                message=message,
+                text='Выберите интересующий тип СИЗ из списка:',
+                reply_markup=show_siz_types(siz_types),
+                state=state
+            )
+            await response_back(
+                message=message,
+                state=state,
+                msg_text='Для возврата в главное меню нажмите на кнопку <b>Вернуться в главное меню</b>',
+                delete_after=True,
+                main_only=True
+            )
+            await SIZService.remember_variables_in_state(state, types=siz_types)
+            await state.set_state(new_state)
+        except NoTypesFound:
+            await message_response(
+                message=message,
+                text='Нет моделей СИЗ для оценки качества.',
+                reply_markup=message.reply_markup,
+                state=state,
+                delete_after=True
+            )
+        except UserNotExist:
+            await message_response(
+                message=message,
+                text='Произошла ошибка при идентификации пользователя. Выполните команду /start и попробуйте снова.',
+                reply_markup=message.reply_markup,
+                state=state,
+                delete_after=True
+            )
+
+
+@router.callback_query(StateFilter(SIZInfoState.get_type), F.data.startswith('type'))
+@router.callback_query(StateFilter(SIZReviewState.get_type), F.data.startswith('type'))
+async def process_choice_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    try:
+        type_id = int(callback.data.split(':')[-1])
+        type_name = await SIZService.get_item_name(state, type_id, 'types')
+        models = await SIZService.list_all_models_by_type(session, type_id)
+        new_state = SIZReviewState.get_model if await state.get_state() == SIZReviewState.get_type else SIZInfoState.get_model
+        await message_response(
+            message=callback.message,
+            text=f'Вы выбрали тип СИЗ:\n<strong>{type_name}</strong>\nВыберите интересующую модель СИЗ из списка:',
+            reply_markup=show_siz_models(models),
+            state=state,
+            num_of_msgs_to_delete=1
+        )
+        await response_back(
+            message=callback.message,
+            state=state,
+            msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
+            delete_after=True,
+            main_only=False
+        )
+        await SIZService.remember_variables_in_state(state, type_id=type_id, models=models)
+        await state.set_state(new_state)
+    except NoModelsFound:
+        await message_response(
+            message=callback.message,
+            text='По выбранному типа не найдены доступные для оценки модели. Выполните команду /cancel и попробуйте снова.',
+            reply_markup=ReplyKeyboardRemove(),
+            state=state,
+            delete_after=True
+        )
+    except CacheError:
+        await handle_exception(callback.message, state)
+    finally:
+        await callback.answer()
+
+
+@router.message(StateFilter(SIZReviewState.get_model), F.text.endswith('Назад'))
+@router.message(StateFilter(SIZInfoState.get_model), F.text.endswith('Назад'))
+async def process_return_to_types_list(message: Message, state: FSMContext):
+    try:
+        siz_types = await SIZService.get_variable_from_state(state, 'types')
+        new_state = SIZInfoState.get_type if await state.get_state() == SIZInfoState.get_model else SIZReviewState.get_type
         await message_response(
             message=message,
             text='Выберите интересующий тип СИЗ из списка:',
             reply_markup=show_siz_types(siz_types),
-            state=state
+            state=state,
+            num_of_msgs_to_delete=3
         )
         await response_back(
             message=message,
@@ -39,142 +122,105 @@ async def process_listing_types(message: Message, state: FSMContext, session: As
             delete_after=True,
             main_only=True
         )
-        await SIZService.cache_user(session, state, message.from_user.id)
-        await SIZService.remember_variables_in_state(state, types=siz_types)
         await state.set_state(new_state)
-
-
-@router.callback_query(StateFilter(SIZInfoState.get_type), F.data.startswith('type'))
-@router.callback_query(StateFilter(SIZReviewState.get_type), F.data.startswith('type'))
-async def process_choice_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    type_id = int(callback.data.split(':')[-1])
-    type_name = await SIZService.get_item_name(state, type_id, 'types')
-    models = await SIZService.list_all_models_by_type(session, type_id)
-    new_state = SIZReviewState.get_model if await state.get_state() == SIZReviewState.get_type else SIZInfoState.get_model
-    await message_response(
-        message=callback.message,
-        text=f'Вы выбрали тип СИЗ:\n<strong>{type_name}</strong>\nВыберите интересующую модель СИЗ из списка:',
-        reply_markup=show_siz_models(models),
-        state=state,
-        num_of_msgs_to_delete=1
-    )
-    await response_back(
-        message=callback.message,
-        state=state,
-        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
-        delete_after=True,
-        main_only=False
-    )
-    await SIZService.remember_variables_in_state(state, type_id=type_id, models=models)
-    await state.set_state(new_state)
-    await callback.answer()
-
-
-@router.message(StateFilter(SIZReviewState.get_model), F.text.endswith('Назад'))
-@router.message(StateFilter(SIZInfoState.get_model), F.text.endswith('Назад'))
-async def process_return_to_types_list(message: Message, state: FSMContext):
-    siz_types = await SIZService.get_variable_from_state(state, 'types')
-    new_state = SIZInfoState.get_type if await state.get_state() == SIZInfoState.get_model else SIZReviewState.get_type
-    await message_response(
-        message=message,
-        text='Выберите интересующий тип СИЗ из списка:',
-        reply_markup=show_siz_types(siz_types),
-        state=state,
-        num_of_msgs_to_delete=3
-    )
-    await response_back(
-        message=message,
-        state=state,
-        msg_text='Для возврата в главное меню нажмите на кнопку <b>Вернуться в главное меню</b>',
-        delete_after=True,
-        main_only=True
-    )
-    await state.set_state(new_state)
+    except CacheError:
+        await handle_exception(message, state)
 
 
 @router.callback_query(StateFilter(SIZInfoState.get_model), F.data.startswith('model'))
 async def process_choice_model(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    model = await SIZService.get_model_info(session, int(callback.data.split(':')[-1]))
-    await post_model_photo(
-        callback, state, session, model,
-        caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>'
-    )
-    if model.protect_props:
-        await message_response(
-            message=callback.message,
-            text=f'<strong>Защитные свойства:</strong>\n<code>{model.protect_props}</code>',
-            state=state
+    try:
+        model = await SIZService.get_model_info(session, int(callback.data.split(':')[-1]))
+        await post_model_photo(
+            callback, state, session, model,
+            caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>'
         )
-    if model.care_procedure:
-        await message_response(
+        if model.protect_props:
+            await message_response(
+                message=callback.message,
+                text=f'<strong>Защитные свойства:</strong>\n<code>{model.protect_props}</code>',
+                state=state
+            )
+        if model.care_procedure:
+            await message_response(
+                message=callback.message,
+                text=f'<strong>Порядок ухода:</strong>\n<code>{model.care_procedure}</code>',
+                state=state
+            )
+        if model.writeoff_criteria:
+            await message_response(
+                message=callback.message,
+                text=f'<strong>Критерии преждевременного списания:</strong>\n<code>{model.writeoff_criteria}</code>',
+                state=state
+            )
+        if model.operating_rules:
+            await message_response(
+                message=callback.message,
+                text=f'<strong>Правила эксплуатации:</strong>\n<code>{model.operating_rules}</code>',
+                state=state
+            )
+        await response_back(
             message=callback.message,
-            text=f'<strong>Порядок ухода:</strong>\n<code>{model.care_procedure}</code>',
-            state=state
+            state=state,
+            msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
+            delete_after=True,
+            main_only=False
         )
-    if model.writeoff_criteria:
-        await message_response(
-            message=callback.message,
-            text=f'<strong>Критерии преждевременного списания:</strong>\n<code>{model.writeoff_criteria}</code>',
-            state=state
-        )
-    if model.operating_rules:
-        await message_response(
-            message=callback.message,
-            text=f'<strong>Правила эксплуатации:</strong>\n<code>{model.operating_rules}</code>',
-            state=state
-        )
-    await response_back(
-        message=callback.message,
-        state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
-        delete_after=True,
-        main_only=False
-    )
-    await state.set_state(SIZInfoState.show_info)
-    await callback.answer()
+        await state.set_state(SIZInfoState.show_info)
+    except InvalidModelError:
+        await handle_exception(callback.message, state)
+    finally:
+        await callback.answer()
 
 
 @router.callback_query(StateFilter(SIZReviewState.get_model), F.data.startswith('model'))
 async def process_set_model(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    model = await SIZService.get_model_info(session, int(callback.data.split(':')[-1]))
-    await post_model_photo(
-        callback, state, session, model,
-        caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\n\nНапишите, пожалуйста, отзыв на выбранную модель.'
-    )
-    await response_back(
-        message=callback.message,
-        state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
-        delete_after=True,
-        main_only=False
-    )
-    await SIZService.remember_variables_in_state(state, model_id=model.id)
-    await state.set_state(SIZReviewState.set_review)
-    await callback.answer()
+    try:
+        model = await SIZService.get_model_info(session, int(callback.data.split(':')[-1]))
+        await post_model_photo(
+            callback, state, session, model,
+            caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\n\nНапишите, пожалуйста, отзыв на выбранную модель.'
+        )
+        await response_back(
+            message=callback.message,
+            state=state,
+            msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
+            delete_after=True,
+            main_only=False
+        )
+        await SIZService.remember_variables_in_state(state, model_id=model.id)
+        await state.set_state(SIZReviewState.set_review)
+    except InvalidModelError:
+        await handle_exception(callback.message, state)
+    finally:
+        await callback.answer()
 
 
 @router.message(StateFilter(SIZReviewState.set_review), F.text.endswith('Назад'))
 @router.message(StateFilter(SIZInfoState.show_info), F.text.endswith('Назад'))
 async def process_return_to_models_list(message: Message, state: FSMContext):
-    models = await SIZService.get_variable_from_state(state, 'models')
-    current_state = await state.get_state()
-    new_state = SIZReviewState.get_model if current_state == SIZReviewState.set_review else SIZInfoState.get_model
-    msgs_to_delete = 6 if current_state == SIZInfoState.show_info else 3
-    await message_response(
-        message=message,
-        text=f'Выберите интересующую модель СИЗ из списка:',
-        reply_markup=show_siz_models(models),
-        state=state,
-        num_of_msgs_to_delete=msgs_to_delete
-    )
-    await response_back(
-        message=message,
-        state=state,
-        msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
-        delete_after=True,
-        main_only=False
-    )
-    await state.set_state(new_state)
+    try:
+        models = await SIZService.get_variable_from_state(state, 'models')
+        current_state = await state.get_state()
+        new_state = SIZReviewState.get_model if current_state == SIZReviewState.set_review else SIZInfoState.get_model
+        msgs_to_delete = 6 if current_state == SIZInfoState.show_info else 3
+        await message_response(
+            message=message,
+            text=f'Выберите интересующую модель СИЗ из списка:',
+            reply_markup=show_siz_models(models),
+            state=state,
+            num_of_msgs_to_delete=msgs_to_delete
+        )
+        await response_back(
+            message=message,
+            state=state,
+            msg_text='Для возврата к списку типов СИЗ нажмите на кнопку <b>Назад</b>',
+            delete_after=True,
+            main_only=False
+        )
+        await state.set_state(new_state)
+    except CacheError:
+        await handle_exception(message, state)
 
 
 @router.message(StateFilter(SIZReviewState.set_review), F.text,
@@ -193,32 +239,40 @@ async def process_set_review(message: Message, state: FSMContext):
 
 @router.callback_query(StateFilter(SIZReviewState.confirm_review), F.data.startswith('yes'))
 async def process_save_review(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    await SIZService.save_review(session, state)
-    await callback_response(
-        callback=callback,
-        text='Ваш отзыв успешно сохранен!',
-        show_alert=True
-    )
-    await return_to_main_menu(callback.message, state, session, callback.from_user.id)
+    try:
+        await SIZService.save_review(session, state)
+        await callback_response(
+            callback=callback,
+            text='Ваш отзыв успешно сохранен!',
+            show_alert=True
+        )
+        await return_to_main_menu(callback.message, state, session, callback.from_user.id)
+    except ReviewSaveError:
+        await handle_exception(callback.message, state)
+        await callback.answer()
 
 
 @router.callback_query(StateFilter(SIZReviewState.confirm_review), F.data.startswith('no'))
 async def process_return_to_set_review(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    model_id = await SIZService.get_variable_from_state(state, 'model_id')
-    model = await SIZService.get_model_info(session, model_id)
-    await post_model_photo(
-        callback, state, session, model,
-        caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\n\nНапишите, пожалуйста, отзыв на выбранную модель.',
-        num_of_msgs_to_delete=4
-    )
-    await response_back(
-        message=callback.message,
-        state=state,
-        msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
-        delete_after=False,
-        main_only=False
-    )
-    await state.set_state(SIZReviewState.set_review)
+    try:
+        model_id = await SIZService.get_variable_from_state(state, 'model_id')
+        model = await SIZService.get_model_info(session, model_id)
+        await post_model_photo(
+            callback, state, session, model,
+            caption=f'Вы выбрали модель СИЗ:\n<strong>{model.name}</strong>\n\nНапишите, пожалуйста, отзыв на выбранную модель.',
+            num_of_msgs_to_delete=4
+        )
+        await response_back(
+            message=callback.message,
+            state=state,
+            msg_text='Для возврата к списку моделей СИЗ нажмите на кнопку <b>Назад</b>',
+            delete_after=False,
+            main_only=False
+        )
+        await state.set_state(SIZReviewState.set_review)
+    except (InvalidModelError, CacheError):
+        await handle_exception(callback.message, state)
+        await callback.answer()
 
 
 @router.callback_query(StateFilter(SIZReviewState.confirm_review), F.data.endswith('cancel'))

@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.notification import NotificationService
 from presentation.keyboards.inline import show_yes_or_no
-from presentation.keyboards.reply import initial_kb, authorization_kb, return_kb
+from presentation.keyboards.reply import initial_kb, authorization_kb
 from services.utils import terminate_state_branch
 from states.auth import AuthState
 from presentation.responses import message_response, callback_response
@@ -16,6 +16,7 @@ from states.notification import NotificationState
 from handlers.base_functions import return_to_main_menu, response_back
 
 router = Router()
+ADMIN_ID = 1106699847
 
 
 @router.message(StateFilter(AuthState.get_contact), F.contact)
@@ -45,7 +46,7 @@ async def process_auth_no_contact(message: Message, state: FSMContext):
     )
 
 
-@router.message(StateFilter(default_state), F.text.endswith('Массовая рассылка'))
+@router.message(StateFilter(default_state), F.text.endswith('Массовая рассылка'), F.from_user.id == ADMIN_ID)
 async def process_start_notification(message: Message, state: FSMContext):
     await response_back(
         message=message,
@@ -96,7 +97,7 @@ async def process_cancel_notification(callback: CallbackQuery, state: FSMContext
     await return_to_main_menu(callback.message, state, session, callback.from_user.id)
 
 
-@router.message(StateFilter(default_state), F.text.endswith('Выполнить обработку уведомлений'))
+@router.message(StateFilter(default_state), F.text.endswith('Выполнить обработку уведомлений'), F.from_user.id == ADMIN_ID)
 async def process_send_notifications(message: Message, state: FSMContext, session: AsyncSession):
     await NotificationService.send_mass_admin_notification(message.bot, session)
     await return_to_main_menu(message, state, session, message.from_user.id)

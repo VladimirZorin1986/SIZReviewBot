@@ -37,7 +37,7 @@ def load_config() -> Config:
     return Config(
         bot=BotConfig(
             token=env('BOT_TOKEN'),
-            storage=MemoryStorage()
+            storage=RedisStorage.from_url(env('REDIS_URL'))
         ),
         db=DatabaseConfig(
             db_name=env('DB_NAME'),

@@ -1,4 +1,4 @@
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from presentation.keyboards.reply import initial_kb, authorization_kb, return_kb
@@ -42,4 +42,13 @@ async def response_back(
         reply_markup=return_kb(main_only=main_only),
         state=state,
         delete_after=delete_after
+    )
+
+
+async def handle_exception(message: Message, state: FSMContext):
+    await message_response(
+        message=message,
+        text='Произошла ошибка. Выполните команду /cancel и попробуйте снова',
+        reply_markup=ReplyKeyboardRemove(),
+        state=state
     )
