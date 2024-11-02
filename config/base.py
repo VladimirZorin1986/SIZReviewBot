@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from environs import Env
 from aiogram.fsm.storage.memory import MemoryStorage, BaseStorage
-from aiogram.fsm.storage.redis import RedisStorage, Redis
+from aiogram.fsm.storage.redis import RedisStorage
 
 
 @dataclass

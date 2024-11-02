@@ -16,14 +16,17 @@ async def notification_job(bot: Bot, session_maker: async_sessionmaker):
                 for user in users:
                     try:
                         await bot.send_message(chat_id=user.tg_id, text=notification.notice_text)
-                        await asyncio.sleep(0.1)
                     except Exception as e:
                         print(f'Не удалось отправить сообщение пользователю {user.id}\nТекст исключения:\n{e}')
                         raise InvalidNotificationError
+                    else:
+                        await asyncio.sleep(0.1)
             except InvalidNotificationError:
                 print(f'Не удалось отправить уведомление с id={notification.id}')
             else:
                 await AdminDAO.update_object(session, notification.id, delivered_at=dt.datetime.now())
+            finally:
+                await asyncio.sleep(0.5)
 
 
 class NotificationService:
