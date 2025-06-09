@@ -1,41 +1,31 @@
-import os
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from contextlib import contextmanager
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from database.models import Base
+from contextlib import asynccontextmanager
 
 # Фикстура для инициализации временной базы данных
 @pytest.fixture(scope="session")
 def engine():
     """Создаем движок SQLite"""
-    return create_engine("sqlite:///:memory:", echo=True)
+    return create_async_engine("sqlite+aiosqlite:///:memory:", echo=True)
 
 @pytest.fixture()
-def tables(engine):
-    """Создаем таблицы для каждой сессии тестов."""
-    Base.metadata.create_all(engine)
-    yield
-    Base.metadata.drop_all(engine)
-
-@pytest.fixture()
-def db_session(engine, tables):
+@asynccontextmanager
+async def db_session(engine):
     """Инициализируем сессию для каждого отдельного теста."""
-    Session = sessionmaker(bind=engine)
-    with Session() as session:
-        try:
-            yield session
-        finally:
-            session.close()
+    connection = await engine.connect()
+    transaction = await connection.begin()
 
-@contextmanager
-def transactional_session(db_session):
-    """
-    Обеспечивает автоматический откат изменений при возникновении исключений.
-    """
-    try:
-        yield db_session
-        db_session.commit()
-    except Exception:
-        db_session.rollback()
-        raise
+    SessionMaker = async_sessionmaker(
+        bind=connection,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    session = SessionMaker()
+
+    await connection.run_sync(Base.metadata.create_all)
+    yield session
+
+    await session.close()
+    await connection.run_sync(Base.metadata.drop_all)
+    await connection.close()

@@ -3,7 +3,6 @@ from datetime import datetime
 from contextlib import nullcontext as does_not_raise
 from sqlalchemy import select, insert, delete, update
 from sqlalchemy.exc import IntegrityError, StatementError
-from tests.conftest import transactional_session
 from database.models import (
                                 PickPoint, SIZType, SIZUser,
                                 QuestionPriority, SIZFAQ, SIZModel,
@@ -27,11 +26,12 @@ from database.models import (
         ({"name": "text", "last_modified_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_pickpoint(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_pickpoint(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(PickPoint).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -50,11 +50,12 @@ def test_pickpoint(db_session, test_values, expectation):
         ({"name": "text", "last_modified_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_siz_type(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_siz_type(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(SIZType).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -74,11 +75,12 @@ def test_siz_type(db_session, test_values, expectation):
         ({"phone_number": "text", "is_active": True, "last_modified_at": datetime.now(), "registered_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_siz_user(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_siz_user(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(SIZUser).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -92,11 +94,12 @@ def test_siz_user(db_session, test_values, expectation):
         ({"id": 1, "name": "text"}, pytest.raises(IntegrityError)),
     ],
 )
-def test_question_priority(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_question_priority(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(QuestionPriority).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -117,11 +120,12 @@ def test_question_priority(db_session, test_values, expectation):
         ({"priority_id": 2, "question_text": "text", "answer_text": "text", "last_modified_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_siz_faq(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_siz_faq(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(SIZFAQ).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -141,11 +145,12 @@ def test_siz_faq(db_session, test_values, expectation):
         ({"type_id": 2, "name": "text", "last_modified_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_siz_model(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_siz_model(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(SIZModel).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -166,11 +171,12 @@ def test_siz_model(db_session, test_values, expectation):
         ({"id": 1, "pickpoint_id": 2, "user_id": 3, "rating_score": 4, "score_comment": "text", "created_at": datetime.now(), "sent_to_eis": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_pickpoint_rating(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_pickpoint_rating(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(PickPointRating).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -190,11 +196,12 @@ def test_pickpoint_rating(db_session, test_values, expectation):
         ({"id": 1, "model_id": 2, "user_id": 3, "review_text": "text", "created_at": datetime.now(), "sent_to_eis": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_siz_model_review(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_siz_model_review(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(SIZModelReview).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
 
 @pytest.mark.parametrize(
     "test_values,expectation",
@@ -215,8 +222,9 @@ def test_siz_model_review(db_session, test_values, expectation):
         ({"notice_text": "text", "created_at": datetime.now(), "sent_from_eis": datetime.now(), "delivered_at": "BAD"}, pytest.raises(StatementError)),
     ],
 )
-def test_admin_notice(db_session, test_values, expectation):
-    with transactional_session(db_session) as session:
+@pytest.mark.asyncio
+async def test_admin_notice(db_session, test_values, expectation):
+    async with db_session as session:
         query = insert(AdminNotice).values(**test_values)
         with expectation:
-            session.execute(query)
+            await session.execute(query)
