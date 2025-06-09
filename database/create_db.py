@@ -1,6 +1,7 @@
 import asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 from database.models import Base
+from config import load_config
 
 
 async def insert_objects(async_session: async_sessionmaker[AsyncSession]) -> None:
@@ -8,8 +9,10 @@ async def insert_objects(async_session: async_sessionmaker[AsyncSession]) -> Non
 
 
 async def async_main() -> None:
+    config = load_config()
+
     engine = create_async_engine(
-        "postgresql+asyncpg://postgres:postgres@localhost/siz_review_db_test",
+        config.db.url,
         echo=True,
     )
 
