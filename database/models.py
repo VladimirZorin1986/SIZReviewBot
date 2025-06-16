@@ -105,7 +105,7 @@ class PickPointRating(Base):
     )
     rating_score: Mapped[int] = mapped_column(SmallInteger)
     score_comment: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('NOW()'))
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     sent_to_eis: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
 
 
@@ -122,7 +122,7 @@ class SIZModelReview(Base):
         ForeignKey(column='siz_user.id', ondelete='CASCADE')
     )
     review_text: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('NOW()'))
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     sent_to_eis: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
 
 
