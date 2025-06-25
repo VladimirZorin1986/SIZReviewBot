@@ -31,7 +31,7 @@ class UserService(BaseService):
     @classmethod
     async def is_admin_user(cls, async_session: AsyncSession, tg_id: int) -> bool:
         user = await UserDAO.find_one_or_none(async_session, tg_id=tg_id, is_active=True)
-        if user.id in cls.admins:
+        if user and user.id in cls.admins:
             return True
         return False
 
