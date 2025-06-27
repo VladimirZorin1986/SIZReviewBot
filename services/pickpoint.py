@@ -3,7 +3,7 @@ from dao.pickpoint import PickPointDAO, PickPointRatingDAO
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.base import BaseService
 from exceptions.pickpoints import PickPointsNotFound, RatingRecordSaveError
-from exceptions.cache import InvalidItems
+from exceptions.cache import InvalidVariable
 
 
 class PickPointService(BaseService):
@@ -28,5 +28,5 @@ class PickPointService(BaseService):
                 rating_score=score,
                 score_comment=comment
             )
-        except InvalidItems:
+        except InvalidVariable:
             raise RatingRecordSaveError

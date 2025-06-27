@@ -81,22 +81,3 @@ async def get_variable_from_state(state: FSMContext, var_name: str) -> Any:
 async def get_variables_from_state(state: FSMContext, var_names: list[str]) -> list[Any]:
     data = await state.get_data()
     return [data.get(var) for var in var_names]
-
-
-async def set_msg_track(state: FSMContext) -> None:
-    data = await state.get_data()
-    track_messages = data.get('track_messages') or {}
-    await state.update_data(track_messages=track_messages)
-
-
-async def set_state_msg_item(state: FSMContext, state_name: str) -> None:
-    data = await state.get_data()
-    if state_name not in data['track_messages']:
-        data['track_messages'][state_name] = []
-        await state.update_data(track_messages=data['track_messages'])
-
-
-async def add_msg_to_track(state: FSMContext, message_id: int, state_name: str) -> None:
-    data = await state.get_data()
-    data['track_messages'][state_name].append(message_id)
-    await state.update_data(track_messages=data['track_messages'])
