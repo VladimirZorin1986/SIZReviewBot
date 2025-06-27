@@ -1,25 +1,17 @@
 import pytest
 from datetime import datetime
-from sqlalchemy import insert
-from contextlib import asynccontextmanager
 from services.base import BaseService
 from database.models import SIZUser
 from exceptions.user import UserNotExist
 from exceptions.cache import InvalidItems, InvalidVariable, ItemNotFound
 
-user_rows = [
-    (3, 123, "+78887776655", True, datetime(2025, 6, 6, 10, 0, 0)),
-    (4, None, "+74445556677", True, datetime(2025, 6, 12, 10, 0, 0)),
-    (5, 128, "+79992323232", False, datetime(2025, 6, 12, 10, 0, 0)),
-]
-
-@pytest.fixture()
-@asynccontextmanager
-async def db_session_filled(db_session):
-    async with db_session as session:
-        query = insert(SIZUser).values([{'id': id, 'tg_id': tg_id, 'phone_number': phone_number, 'is_active': is_active, 'last_modified_at': last_modified_at} for id, tg_id, phone_number, is_active, last_modified_at in user_rows])
-        await session.execute(query)
-        yield session
+db_tables = {
+    SIZUser: [
+        {"id": 3, "tg_id": 123,  "phone_number": "+78887776655", "is_active": True,  "last_modified_at": datetime(2025, 6, 6, 10, 0, 0)},
+        {"id": 4, "tg_id": None, "phone_number": "+74445556677", "is_active": True,  "last_modified_at": datetime(2025, 6, 12, 10, 0, 0)},
+        {"id": 5, "tg_id": 128,  "phone_number": "+79992323232", "is_active": False, "last_modified_at": datetime(2025, 6, 12, 10, 0, 0)},
+    ]
+}
 
 @pytest.mark.asyncio
 async def test_remember_variables_in_state(context) -> None:

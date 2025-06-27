@@ -2,33 +2,22 @@ import pytest
 from datetime import datetime
 from dao.siz import SIZModelDAO, SIZReviewDAO
 from database.models import SIZType, SIZModel
-from sqlalchemy import insert
-from contextlib import asynccontextmanager
 from services.siz import SIZService
 from exceptions.siz import NoTypesFound, NoModelsFound, InvalidModelError, ReviewSaveError
 from services.models import SModel
 
-siz_type_rows = [
-    (3, "Тип А", True, datetime(2025, 6, 6, 10, 0, 0)),
-    (4, "Тип Б", True, datetime(2025, 6, 12, 10, 0, 0)),
-    (5, "Тип В", False, datetime(2025, 6, 12, 10, 0, 0)),
-]
-
-siz_model_rows = [
-    (1, 3, "SIZ A", False, datetime(2025, 6, 12, 10, 0, 0)),
-    (2, 3, "СИЗ А", True, datetime(2025, 9, 12, 10, 0, 0)),
-    (3, 4, "СИЗ Б", True, datetime(2025, 12, 12, 10, 0, 0)),
-]
-
-@pytest.fixture()
-@asynccontextmanager
-async def db_session_filled(db_session):
-    async with db_session as session:
-        query = insert(SIZType).values([{'id': id, 'name': name, 'is_active': is_active, 'last_modified_at': last_modified_at} for id, name, is_active, last_modified_at in siz_type_rows])
-        await session.execute(query)
-        query = insert(SIZModel).values([{"id": id, "type_id": type_id, "name": name, 'is_active': is_active, "last_modified_at": last_modified_at} for id, type_id, name, is_active, last_modified_at in siz_model_rows])
-        await session.execute(query)
-        yield session
+db_tables = {
+    SIZType: [
+        {"id": 3, "name": "Тип А", "is_active": True,  "last_modified_at": datetime(2025, 6, 6, 10, 0, 0)},
+        {"id": 4, "name": "Тип Б", "is_active": True,  "last_modified_at": datetime(2025, 6, 12, 10, 0, 0)},
+        {"id": 5, "name": "Тип В", "is_active": False, "last_modified_at": datetime(2025, 6, 12, 10, 0, 0)},
+    ],
+    SIZModel: [
+        {"id": 1, "type_id": 3, "name": "SIZ A", "is_active": False, "last_modified_at": datetime(2025, 6, 12, 10, 0, 0)},
+        {"id": 2, "type_id": 3, "name": "СИЗ А", "is_active": True,  "last_modified_at": datetime(2025, 9, 12, 10, 0, 0)},
+        {"id": 3, "type_id": 4, "name": "СИЗ Б", "is_active": True,  "last_modified_at": datetime(2025, 12, 12, 10, 0, 0)},
+    ]
+}
 
 @pytest.mark.asyncio
 async def test_list_all_types(db_session_filled) -> None:

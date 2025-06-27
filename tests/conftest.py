@@ -114,6 +114,28 @@ async def db_session(engine):
     await connection.close()
 
 @pytest.fixture()
+@asynccontextmanager
+async def db_session_filled(request, db_session):
+    """
+    Инициализируем сессию заполненную таблицами
+
+    :param db_tables: Словарь "таблица: строки", задаётся непосредственно в модуле, который использует данную фикстуру
+    :type db_tables: Dict[database.models.Base, list[Dict[str, Any]]]
+    """
+    test_module = request.module
+
+    if not hasattr(test_module, 'db_tables'):
+        pytest.fail(f"В модуле {test_module.__name__} нет db_tables")
+
+    db_tables = test_module.db_tables
+
+    async with db_session as session:
+        for table, rows in db_tables.items():
+            query = insert(table).values(rows)
+            await session.execute(query)
+        yield session
+
+@pytest.fixture()
 def context() -> FSMContext:
     """Инициализируем FSM контекст для каждого отдельного теста."""
     return FSMContext(storage=MemoryStorage(), key=StorageKey(1, 2, 8))

@@ -1,25 +1,17 @@
 import pytest
 from datetime import datetime
-from sqlalchemy import insert
-from contextlib import asynccontextmanager
 from services.pickpoint import PickPointService
 from database.models import PickPoint
 from exceptions.pickpoints import PickPointsNotFound, RatingRecordSaveError
 from dao.pickpoint import PickPointRatingDAO
 
-pickpoint_rows = [
-    (1, "Pickpoint A", True, datetime(2025, 1, 6, 10, 0, 0)),
-    (2, "Pickpoint B", False, datetime(2025, 2, 6, 10, 0, 0)),
-    (3, "Pickpoint C", True, datetime(2025, 3, 6, 10, 0, 0)),
-]
-
-@pytest.fixture()
-@asynccontextmanager
-async def db_session_filled(db_session):
-    async with db_session as session:
-        query = insert(PickPoint).values([{'id': id, 'name': name, 'is_active': is_active, 'last_modified_at': last_modified_at} for id, name, is_active, last_modified_at in pickpoint_rows])
-        await session.execute(query)
-        yield session
+db_tables = {
+    PickPoint: [
+        {"id": 1, "name": "Pickpoint A", "is_active": True,  "last_modified_at": datetime(2025, 1, 6, 10, 0, 0)},
+        {"id": 2, "name": "Pickpoint B", "is_active": False, "last_modified_at": datetime(2025, 2, 6, 10, 0, 0)},
+        {"id": 3, "name": "Pickpoint C", "is_active": True,  "last_modified_at": datetime(2025, 3, 6, 10, 0, 0)},
+    ]
+}
 
 @pytest.mark.asyncio
 async def test_list_all_pickpoints(db_session_filled) -> None:

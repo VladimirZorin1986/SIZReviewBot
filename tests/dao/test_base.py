@@ -2,28 +2,20 @@ import pytest
 from datetime import datetime
 from dao.admin import AdminDAO
 from database.models import AdminNotice
-from sqlalchemy import insert
-from contextlib import asynccontextmanager
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
-admin_notice_rows = [
-    (1, "Important notice", datetime(2025, 6, 9, 10, 0, 0), datetime(2025, 6, 9, 11, 0, 0), datetime(2025, 6, 10, 12, 0, 0)),
-    (2, "Important notice", datetime(2025, 6, 6, 10, 0, 0), datetime(2025, 6, 12, 11, 0, 0), None),
-    (3, "Important notice 3", datetime(2025, 6, 12, 10, 0, 0), datetime(2025, 6, 13, 11, 0, 0), datetime(2025, 6, 13, 12, 0, 0)),
-    (4, "Important notice 4", datetime(2025, 6, 9, 10, 0, 0), datetime(2025, 6, 14, 11, 0, 0), datetime(2025, 6, 15, 12, 0, 0)),
-]
-
-@pytest.fixture()
-@asynccontextmanager
-async def db_session_filled(db_session):
-    async with db_session as session:
-        query = insert(AdminNotice).values([{'id': id, 'notice_text': notice_text, 'created_at': created_at, 'sent_from_eis': sent_from_eis, 'delivered_at': delivered_at} for id, notice_text, created_at, sent_from_eis, delivered_at in admin_notice_rows])
-        await session.execute(query)
-        yield session
+db_tables = {
+    AdminNotice: [
+        {"id": 1, "notice_text": "Important notice",   "created_at": datetime(2025, 6, 9, 10, 0, 0),    "sent_from_eis": datetime(2025, 6, 9, 11, 0, 0),    "delivered_at": datetime(2025, 6, 10, 12, 0, 0)},
+        {"id": 2, "notice_text": "Important notice",   "created_at": datetime(2025, 6, 6, 10, 0, 0),    "sent_from_eis": datetime(2025, 6, 12, 11, 0, 0),   "delivered_at": None},
+        {"id": 3, "notice_text": "Important notice 3", "created_at": datetime(2025, 6, 12, 10, 0, 0),   "sent_from_eis": datetime(2025, 6, 13, 11, 0, 0),   "delivered_at": datetime(2025, 6, 13, 12, 0, 0)},
+        {"id": 4, "notice_text": "Important notice 4", "created_at": datetime(2025, 6, 9, 10, 0, 0),    "sent_from_eis": datetime(2025, 6, 14, 11, 0, 0),   "delivered_at": datetime(2025, 6, 15, 12, 0, 0)},
+    ]
+}
 
 @pytest.mark.parametrize(
     "id,expectation",
-    [(id, {'notice_text': notice_text, 'created_at': created_at, 'sent_from_eis': sent_from_eis, 'delivered_at': delivered_at}) for id, notice_text, created_at, sent_from_eis, delivered_at in admin_notice_rows]
+    [(row['id'], {key: value for key, value in row.items() if key != 'id'}) for row in db_tables[AdminNotice]]
 )
 @pytest.mark.asyncio
 async def test_find_by_id(db_session_filled, id, expectation):
