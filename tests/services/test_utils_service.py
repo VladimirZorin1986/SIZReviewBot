@@ -10,6 +10,7 @@ from services.utils import (add_message_to_track, _get_msg_stack, erase_last_mes
 
 @pytest.fixture()
 async def context_filled(context):
+    """Инициализируем FSM контекст заполненный данными"""
     await context.set_data({'track_messages':[1, 2, 8], 'misc':"data"})
     return context
 
